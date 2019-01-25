@@ -1,10 +1,10 @@
-# VERSION: 0.1
+# VERSION: 0.2
 # AUTHORS: imDMG [imdmgg@gmail.com]
 
 # html selector for default python HTMLParser
 
 import time
-# import re
+import re
 # import logging
 
 from html.parser import HTMLParser
@@ -33,6 +33,8 @@ class HTMLSelector(HTMLParser):
                 if tag == item['tag'] and self._filter(item['attrs'], attrs):
                     self.mark = True
                     self.attrs = attrs
+                    self.name = item["name"]
+                    self.container_group = item["group"]
                     if item['container']:
                         self.mark = False
                         self.attrs = None
@@ -46,12 +48,12 @@ class HTMLSelector(HTMLParser):
 
                     if item['index']:
                         self.mark = False
-                        if type(item['index']) is int:
-                            if self.index_count == item['index']:
-                                self.mark = True
-                        else:
+                        if item['index'].find(":"):
                             start, end = item['index'].split(":")
                             if self.index_count in range(int(start), int(end)):
+                                self.mark = True
+                        else:
+                            if self.index_count == int(item['index']):
                                 self.mark = True
 
                     self.index_count += 1
@@ -60,6 +62,7 @@ class HTMLSelector(HTMLParser):
         if tag == self.container_tag:
             if self.container_group:
                 self.data[self.name].append(self.grouping)
+                self.grouping = []
                 self.index_count = 0
             self.container_tag = None
 
@@ -78,18 +81,9 @@ class HTMLSelector(HTMLParser):
     def error(self, message):
         pass
 
-    def find(self, tag, storage_name, attrs=None, index=None, container=None):
-        # selector.find(tag, attrs, index)
-        # TODO do checking
-        # container
-        if not storage_name:
-            container = tag
+    def find(self, *args):
+        self._selector_re(*args)
 
-        self.tag_data.append({"tag": tag,
-                              "storage_name": storage_name,
-                              "attrs": attrs,
-                              "index": index,
-                              "container": container})
         return self
 
     def where(self, method, *args):
@@ -106,7 +100,7 @@ class HTMLSelector(HTMLParser):
         self.container_group = trigger
         return self
 
-    def selector(self, cond: str, storage="latest"):
+    def _selector(self, cond: str, storage="latest"):
         container = False
         elems = cond.split(" ")
         for n, elem in enumerate(elems):
@@ -144,6 +138,37 @@ class HTMLSelector(HTMLParser):
 
         return self
 
+    def _selector_re(self, cond: str, store_name="latest", group=False):
+        container = False
+        elems = cond.split(" ")
+        for n, elem in enumerate(elems):
+            tag = re.search(r'(\w+)[\[(]?', elem)[1]
+            attrs = dict(re.findall(r'(\w+)=([\w|.]+)', elem))
+            index = re.search(r'\(([\d:]+)\)', elem)
+
+            if attrs.get("class"):
+                # or
+                if "|" in attrs["class"]:
+                    attrs["class"] = tuple(attrs["class"].split("|"))
+                # and
+                elif "." in attrs["class"]:
+                    attrs["class"] = attrs["class"].split(".")
+
+            if len(elems) > 1 and n < len(elems)-1:
+                container = True
+            content = True if len(elems) > 1 and n == len(elems)-1 else False
+            self.tag_data.append({"tag": tag,
+                                  "name": store_name,
+                                  "attrs": attrs,
+                                  "container": container,
+                                  "content": content,
+                                  "group": group,
+                                  "index": index[1] if index else ""})
+            container = False
+            # container = tag
+
+        return self
+
     def _data_pass(self, tag, attrs):
         pass
 
@@ -176,9 +201,10 @@ if __name__ == "__main__":
     parser = HTMLSelector()
     # None: we not store the data, just mark position
     # find(tr.bg  td.s|sl_s|slp)
-    # parser.selector("tr[class=bg] td[class=s|sl_s|slp;id=me](3:5)")
-    parser.selector("tr[class=bg] td(3:6)", "params").group()
-    parser.selector("tr[class=bg] a[class=r0|r1]", "links").group()
+    # parser._selector_re("tr[class=bg] a[class=r0|r1]", "links")
+    parser.find("tr[class=bg] td(3:6)", "kaka", True)
+    # parser._selector_re("select[class=w190]")
+    # parser._selector("tr[class=bg] td(3:6)", "params").group()
     print(parser.tag_data)
     # line = "td[class=s|sl_s|slp;id=me](3:5)"
     # pair = re.findall(r"[\w]+=[\w|]+", line)
@@ -190,5 +216,6 @@ if __name__ == "__main__":
     # print(parser.tag_data)
     parser.feed(f.read())
     print(parser.data)
+    # print(len(parser.data["kaka"]))
 
     print("--- %s seconds ---" % (time.time() - start_time))
