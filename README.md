@@ -9,6 +9,7 @@ HTML selector for default python HTMLParser
     parser = HTMLSelector()
 
     parser.find("div[class=header|container;title=title] a[class=name.width;href=example.com](10:25)", "storage_name", True, lambda atr, dt: [atr, dt])
+    parser.find("...")
     parser.feed(HTML_DATA)
     parser.data["storage_name"]
     parser.close()
@@ -19,4 +20,4 @@ In that example we search tag a where classes `name` AND `width` AND `href=examp
 
 3rd parameter (bool) means grouping by container.
 
-4rd parameter - callback function
+4rd parameter - callback function.
