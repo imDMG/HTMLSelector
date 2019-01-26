@@ -14,7 +14,7 @@ HTML selector for default python HTMLParser
     parser.data["storage_name"]
     parser.close()
 
-In that example we search tag a where classes `name` AND `width` AND `href=example.com` AND sort `10-25` items IN CONTAINER div where classes `header` OR `container` AND `title=title`.
+In that example we search tag `a` where classes `name` AND `width` AND `href=example.com` AND sort `10-25` items IN CONTAINER `div` where classes `header` OR `container` AND `title=title`.
 
 2nd parameter it's name of dict where store your collected data (for one fine() call). It can be merged.
 
